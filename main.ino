@@ -11,7 +11,7 @@
 
 // Impostazioni
 #define DEBUG 				1
-#define INSECURE_COMM 		1
+#define INSECURE_COMM 			1
 #define HOSTNAME 			"YouTubeSubsCounter"
 
 // Parametri Matrice Led 
@@ -117,6 +117,7 @@ int start_wifi_connection() {
 
 	// Diagnostichiamo lo stato della rete
 	switch (WiFi.status()) {
+			
 		case WL_CONNECTED:
 			if (DEBUG) {
 				Serial.print("!");
@@ -131,20 +132,23 @@ int start_wifi_connection() {
 				Serial.printf("BSSID: %s\n", 		WiFi.BSSIDstr().c_str());
 			}
 			return 0;
+			
 		case WL_NO_SSID_AVAIL:
 			Serial.printf("[E] SSID [%s] non rilevato dalla scheda di rete.", SSID);
 			return -1;
+			
 		case WL_CONNECT_FAILED:
 			Serial.print("[E] Password rifiutata dall'SSID [%s].", SSID);
 			Serial.println(SSID);
 			return -1;
+			
 		case WL_IDLE_STATUS:
 			if (DEBUG) {
 				Serial.print("[W] Connessione a [%s] sospesa, ritento tra 10 secondi.", SSID);
 			}
-
 			delay(1000 * 10);
-			return acquire_wifi_connection();
+			return start_wifi_connection();
+			
 		case WL_DISCONNECTED:
 			Serial.print("[E] Scheda di rete non in station mode (WIFI_STA)");
 			return -1;
@@ -174,7 +178,7 @@ void loop() {
 	if (api.getChannelStatistics(idCanale)) {
 		displayLed.print(api.channelStats.subscriberCount);
 	} else {
-    	displayLed.print(":(");
+    		displayLed.print(":(");
 	}
   
   	delay(1000 * 60 * 30);  // Aggiorno ogni 30 minuti
