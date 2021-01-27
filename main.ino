@@ -10,9 +10,9 @@
 #include <ArduinoJson.h>
 
 // Impostazioni
-#define DEBUG 				1
+#define DEBUG 			1
 #define INSECURE_COMM 		1
-#define HOSTNAME 			"YouTubeSubsCounter"
+#define HOSTNAME 		"YouTubeSubsCounter"
 
 // Parametri Matrice Led 
 #define HARDWARE_TYPE 		MD_MAX72XX::FC16_HW
