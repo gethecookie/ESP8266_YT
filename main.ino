@@ -1,3 +1,6 @@
+/**
+ *	Librerie richieste: MD_Parola, YoutubeApi, ArduinoJson?, WiFiClientSecure
+ **/
 #include <MD_Parola.h>
 #include <MD_MAX72xx.h>
 #include <SPI.h>
@@ -6,74 +9,168 @@
 #include <YoutubeApi.h>
 #include <ArduinoJson.h>
 
-// Parametri matrice Led
-#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
-#define MAX_DEVICES 4
+// Impostazioni
+#define DEBUG 				1
+#define INSECURE_COMM 		1
+#define HOSTNAME 			"YouTubeSubsCounter"
 
-#define CLK_PIN           12   // D6
-#define DATA_PIN          15   // D8
-#define CS_PIN            13   // D7
+// Parametri Matrice Led 
+#define HARDWARE_TYPE 		MD_MAX72XX::FC16_HW
+#define MAX_DEVICES 		4  		// Numero matrici
+#define PIN_CLK           	12 		// D6
+#define PIN_DATA          	15 		// D8
+#define CS_DATA           	13 		// D7
 
-//Parametri per comunicazione con YouTube
-#define idCanale          "**********"    // ID Canale YouTube (Quello nell'URL)
-#define apiKey            "**********"    // Chiave API di Google
+// Parametri per comunicazione con YouTube
+#define idCanale          	"**********"    // ID Canale YouTube (Quello nell'URL)
+#define apiKey            	"**********"    // Chiave API di Google
 
-//Parametri per connessione a rete WiFi
-char ssid[]              = "**********";  // SSID Rete Wi-Fi
-char password[]          = "**********";  // Password della Wi-Fi
+// Parametri per connessione a WiFi
+#define SSID             	"**********"  	// SSID Rete Wi-Fi
+#define PASSWORD          	"**********" 	// PASSWORD della Wi-Fi
+
 
 WiFiClientSecure client;
 YoutubeApi api(apiKey, client);
 
-MD_Parola displayLed = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+// Led matrix printer
+MD_Parola displayLed = MD_Parola(HARDWARE_TYPE, PIN_DATA, PIN_CLK, CS_DATA, MAX_DEVICES);
 
-void setup(void) {
 
-	client.setInsecure();
-  
-	displayLed.begin();  //inizializzo matrice led
+void debug(String str) {
+	if (DEBUG) {
+		Serial.print(str);
+	}
+}
 
+void init_serial() {
+	Serial.begin(9600);
+}
+
+/**
+ * Abilita funzionalità e dettagli per il debugging
+ */
+void init_debug() {
+	if (DEBUG) {
+		api._debug = true;
+	}
+}
+
+
+void init_display() {
+	displayLed.setTextAlignment(PA_CENTER);
+}
+
+/**
+ * Abilita le comunicazioni in chiaro, necessarie per modelli di MTU precedenti al 2.5
+ */
+void init_client() {
+	if (INSECURE_COMM) {
+		client.setInsecure();
+	}
+}
+
+/**
+ * Funzione per inizializzare la libreria WiFi. Questa funzione fa alcune cose;
+ * - Imposta la modalità del wifi a "WiFi station"
+ * - Si disconnette da eventuali reti già collegate
+ * - Mette il nome in rete della scheda al contenuto di HOSTNAME
+ * - Abilita la riconnessione automatica
+ */
+void init_wifi() {
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
 	delay(100);
-  
-/*
-	Serial.begin(9600); //inizializzo scrittura di verifica a console
-	Serial.print("Connessione in corso a: ");
-	Serial.println(ssid);
 
-	api._debug = true;  //stampa in automatico info di debug
-*/
-
-	WiFi.begin(ssid,password);  //mi connetto alla rete
-
-	while(WiFi.status() != WL_CONNECTED){
-	    delay(500);
-	    //Serial.print(".");        
-	}
-
-/*
-	Serial.println();
-
-	Serial.println("[DEBUG] Connessione avvenuta con successo!");
-	Serial.print("NodeMCU Indirizzo IP: ");
-	Serial.println(WiFi.localIP());
-*/
-
-	displayLed.setTextAlignment(PA_CENTER);  //allineo testo al centro
+	WiFi.hostname(HOSTNAME);
+	WiFi.setAutoReconnect(true);
 }
 
-void loop(void) {
-	if(api.getChannelStatistics(idCanale)) {
-	/*
-	  Serial.print("Numero Iscritti: ");
-	  Serial.println(api.channelStats.subscriberCount);
-	*/
+/**
+ * Eseguiamo la connessione alla rete wifi descritta dall'SSID e dalla PASSWORD, con diagnostica degli errori.
+ * Nel caso di successo il programma procede.
+ * Nel caso di un errore recuperabile la scheda ritenta la connessione.
+ * Nel caso di un errore fatale il programma si termina.
+ **/
+int start_wifi_connection() {
+	if (WiFi.status() == WL_CONNECTED) {
+		Serial.printf("Gia connesso alla rete [%s]\n", SSID);
+		return 0;
+	}
+
+	Serial.print("Tentativo di connessione alla rete [");
+	Serial.print(SSID);
+	Serial.println("]");
+
+	// Viene iniziata la procedura di connessione alla rete
+	WiFi.begin(SSID, PASSWORD);
+
+
+	// Attendiamo che il wifi si connetta
+	while(WiFi.status() == WL_IDLE_STATUS) {
+	    debug(".");
+	    delay(250);
+	}
+
+	delay(500);
+	debugln("|");
+
+	// Diagnostichiamo lo stato della rete
+	switch (WiFi.status()) {
+		case WL_CONNECTED:
+			Serial.print("!");
+			Serial.println("Connessione stabilita con successo.");
+
+			if (DEBUG) {
+				Serial.printf("Hostname: %s\n", 	WiFi.hostname().c_str());
+				Serial.printf("Indirizzo IP: %s\n", WiFi.localIP().toString().c_str());
+				Serial.printf("Subnet mask: %s\n", 	WiFi.subnetMask().toString().c_str());
+				Serial.printf("Mac Address: %s\n", 	WiFi.macAddress().c_str());
+				Serial.printf("Gataway IP: %s\n", 	WiFi.gatewayIP().toString().c_str());
+				Serial.printf("RSSI: %d dBm\n", 	WiFi.RSSI());
+				Serial.printf("BSSID: %s\n", 		WiFi.BSSIDstr().c_str());
+			}
+
+			return 0;
+		case WL_NO_SSID_AVAIL:
+			Serial.printf("[E] SSID [%s] non rilevato dalla scheda di rete.", SSID);
+			return -1;
+		case WL_CONNECT_FAILED:
+			Serial.print("[E] Password rifiutata dall'SSID [%s].", SSID);
+			Serial.println(SSID);
+			return -1;
+		case WL_IDLE_STATUS:
+			Serial.print("[W] Connessione a [%s] sospesa, ritento tra 10 secondi.", SSID);
+			delay(1000 * 10);
+			return acquire_wifi_connection();
+		case WL_DISCONNECTED:
+			Serial.print("[E] Scheda di rete non in station mode (WIFI_STA)");
+			return -1;
+	}
+}
+
+void setup() {
+  	init_serial();
+  	init_debug();
+
+	init_display();
+	init_client();
+	init_wifi();
+
+	int wifiStatus = start_wifi_connection();
+
+	if (wifiStatus != 0) {
+		Serial.println("Termino l'esecuzione.");
+		exit(-1);
+	}
+}
+
+void loop() {
+	if (api.getChannelStatistics(idCanale)) {
 		displayLed.print(api.channelStats.subscriberCount);
 	} else {
-    	displayLed.print("Error");
+    	displayLed.print(":(");
 	}
   
-  
-  	delay(1000 * 60 * 30);  // aggiorno ogni 30min
+  	delay(1000 * 60 * 30);  // Aggiorno ogni 30 minuti
 }
