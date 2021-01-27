@@ -14,13 +14,13 @@
 #define DATA_PIN          15   // D8
 #define CS_PIN            13   // D7
 
-//Parametri per connessione a rete WiFi
-char ssid[]              = "**********";  // SSID Rete Wi-Fi
-char password[]          = "**********";  // Password della Wi-Fi
-
 //Parametri per comunicazione con YouTube
 #define idCanale          "**********"    // ID Canale YouTube (Quello nell'URL)
 #define apiKey            "**********"    // Chiave API di Google
+
+//Parametri per connessione a rete WiFi
+char ssid[]              = "**********";  // SSID Rete Wi-Fi
+char password[]          = "**********";  // Password della Wi-Fi
 
 WiFiClientSecure client;
 YoutubeApi api(apiKey, client);
