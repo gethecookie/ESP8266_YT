@@ -10,9 +10,9 @@
 #include <ArduinoJson.h>
 
 // Impostazioni
-#define DEBUG 			1
+#define DEBUG 				1
 #define INSECURE_COMM 		1
-#define HOSTNAME 		"YouTubeSubsCounter"
+#define HOSTNAME 			"YouTubeSubsCounter"
 
 // Parametri Matrice Led 
 #define HARDWARE_TYPE 		MD_MAX72XX::FC16_HW
@@ -47,6 +47,7 @@ void init_serial() {
 void init_debug() {
 	if (DEBUG) {
 		api._debug = true;
+		Serial.println("Debug build");
 	}
 }
 
@@ -88,13 +89,17 @@ void init_wifi() {
  **/
 int start_wifi_connection() {
 	if (WiFi.status() == WL_CONNECTED) {
-		Serial.printf("Gia connesso alla rete [%s]\n", SSID);
+		if (DEBUG) {
+			Serial.printf("Gia connesso alla rete [%s]\n", SSID);
+		}
 		return 0;
 	}
 
-	Serial.print("Tentativo di connessione alla rete [");
-	Serial.print(SSID);
-	Serial.println("]");
+	if (DEBUG) {
+		Serial.print("Tentativo di connessione alla rete [");
+		Serial.print(SSID);
+		Serial.println("]");
+	}
 
 	// Viene iniziata la procedura di connessione alla rete
 	WiFi.begin(SSID, PASSWORD);
@@ -102,20 +107,21 @@ int start_wifi_connection() {
 
 	// Attendiamo che il wifi si connetta
 	while(WiFi.status() == WL_IDLE_STATUS) {
-	    Serial.print(".");
+		if (DEBUG) {
+	    	Serial.print("."); 
+		}
 	    delay(250);
 	}
 
 	delay(500);
-	Serial.println("!");
 
 	// Diagnostichiamo lo stato della rete
 	switch (WiFi.status()) {
 		case WL_CONNECTED:
-			Serial.print("!");
-			Serial.println("Connessione stabilita con successo.");
-
 			if (DEBUG) {
+				Serial.print("!");
+				Serial.println("Connessione stabilita con successo.");
+
 				Serial.printf("Hostname: %s\n", 	WiFi.hostname().c_str());
 				Serial.printf("Indirizzo IP: %s\n", 	WiFi.localIP().toString().c_str());
 				Serial.printf("Subnet mask: %s\n", 	WiFi.subnetMask().toString().c_str());
@@ -124,7 +130,6 @@ int start_wifi_connection() {
 				Serial.printf("RSSI: %d dBm\n", 	WiFi.RSSI());
 				Serial.printf("BSSID: %s\n", 		WiFi.BSSIDstr().c_str());
 			}
-
 			return 0;
 		case WL_NO_SSID_AVAIL:
 			Serial.printf("[E] SSID [%s] non rilevato dalla scheda di rete.", SSID);
@@ -134,7 +139,10 @@ int start_wifi_connection() {
 			Serial.println(SSID);
 			return -1;
 		case WL_IDLE_STATUS:
-			Serial.print("[W] Connessione a [%s] sospesa, ritento tra 10 secondi.", SSID);
+			if (DEBUG) {
+				Serial.print("[W] Connessione a [%s] sospesa, ritento tra 10 secondi.", SSID);
+			}
+
 			delay(1000 * 10);
 			return acquire_wifi_connection();
 		case WL_DISCONNECTED:
@@ -154,7 +162,10 @@ void setup() {
 	int wifiStatus = start_wifi_connection();
 
 	if (wifiStatus != 0) {
-		Serial.println("Termino l'esecuzione.");
+		if (DEBUG) {
+			Serial.println("Termino l'esecuzione.");
+		}
+		
 		exit(-1);
 	}
 }
