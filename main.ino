@@ -37,12 +37,6 @@ YoutubeApi api(apiKey, client);
 MD_Parola displayLed = MD_Parola(HARDWARE_TYPE, PIN_DATA, PIN_CLK, CS_DATA, MAX_DEVICES);
 
 
-void debug(String str) {
-	if (DEBUG) {
-		Serial.print(str);
-	}
-}
-
 void init_serial() {
 	Serial.begin(9600);
 }
@@ -108,12 +102,12 @@ int start_wifi_connection() {
 
 	// Attendiamo che il wifi si connetta
 	while(WiFi.status() == WL_IDLE_STATUS) {
-	    debug(".");
+	    Serial.print(".");
 	    delay(250);
 	}
 
 	delay(500);
-	debugln("|");
+	Serial.println("!");
 
 	// Diagnostichiamo lo stato della rete
 	switch (WiFi.status()) {
@@ -123,7 +117,7 @@ int start_wifi_connection() {
 
 			if (DEBUG) {
 				Serial.printf("Hostname: %s\n", 	WiFi.hostname().c_str());
-				Serial.printf("Indirizzo IP: %s\n", WiFi.localIP().toString().c_str());
+				Serial.printf("Indirizzo IP: %s\n", 	WiFi.localIP().toString().c_str());
 				Serial.printf("Subnet mask: %s\n", 	WiFi.subnetMask().toString().c_str());
 				Serial.printf("Mac Address: %s\n", 	WiFi.macAddress().c_str());
 				Serial.printf("Gataway IP: %s\n", 	WiFi.gatewayIP().toString().c_str());
